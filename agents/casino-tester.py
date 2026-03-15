@@ -187,7 +187,7 @@ def run_cycle(cycle_num):
     if page_result["passed"]:
         try:
             html, _ = _fetch_page()
-        except Exception as e:
+        except (urllib.error.URLError, urllib.error.HTTPError, OSError) as e:
             print(f"    [WARN] Failed to fetch page for content tests: {e}")
             html = None
 
