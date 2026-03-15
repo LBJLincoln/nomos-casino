@@ -249,22 +249,25 @@ def daemon_loop(interval=300):
     cycle = 0
     print(f"Casino Tester daemon started — testing every {interval}s")
 
-    while True:
-        cycle += 1
-        try:
-            run_cycle(cycle)
-        except Exception as e:
-            print(f"[ERROR] Cycle {cycle}: {e}")
+    try:
+        while True:
+            cycle += 1
             try:
-                err_file = ROOT / "logs" / "errors.jsonl"
-                err_file.parent.mkdir(parents=True, exist_ok=True)
-                with open(err_file, "a") as f:
-                    f.write(json.dumps({"cycle": cycle, "error": str(e), "traceback": traceback.format_exc(), "ts": datetime.now(timezone.utc).isoformat()}) + "\n")
-            except OSError as log_err:
-                print(f"  [WARN] Could not write error log: {log_err}")
+                run_cycle(cycle)
+            except Exception as e:
+                print(f"[ERROR] Cycle {cycle}: {e}")
+                try:
+                    err_file = ROOT / "logs" / "errors.jsonl"
+                    err_file.parent.mkdir(parents=True, exist_ok=True)
+                    with open(err_file, "a") as f:
+                        f.write(json.dumps({"cycle": cycle, "error": str(e), "traceback": traceback.format_exc(), "ts": datetime.now(timezone.utc).isoformat()}) + "\n")
+                except OSError as log_err:
+                    print(f"  [WARN] Could not write error log: {log_err}")
 
-        print(f"  Sleeping {interval}s...")
-        time.sleep(interval)
+            print(f"  Sleeping {interval}s...")
+            time.sleep(interval)
+    except KeyboardInterrupt:
+        print(f"\nDaemon stopped after {cycle} cycles.")
 
 if __name__ == "__main__":
     import argparse
