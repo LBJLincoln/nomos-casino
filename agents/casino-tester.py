@@ -4,7 +4,7 @@ Casino Tester — Autonomous testing of casino games and engagement.
 Tests game loading, API response, scoring system, and user experience.
 """
 
-import os, sys, json, time, random, ssl, urllib.request, hashlib
+import os, sys, json, time, random, ssl, urllib.request
 from pathlib import Path
 from datetime import datetime, timezone
 
