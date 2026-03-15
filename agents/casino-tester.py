@@ -4,7 +4,7 @@ Casino Tester — Autonomous testing of casino games and engagement.
 Tests game loading, API response, scoring system, and user experience.
 """
 
-import os, sys, json, time, random, ssl, urllib.request
+import os, sys, json, time, random, ssl, urllib.request, urllib.error
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -102,8 +102,8 @@ def test_page_load():
                 "page_size": len(html),
                 "status": status,
             }
-    except Exception as e:
-        return {"test": "page_load", "passed": False, "score": 0, "error": str(e)}
+    except (urllib.error.URLError, urllib.error.HTTPError, OSError) as e:
+        return {"test": "page_load", "passed": False, "score": 0, "error": f"{type(e).__name__}: {e}"}
 
 def test_engagement_metrics(html):
     """Validate engagement features against actual page content."""
