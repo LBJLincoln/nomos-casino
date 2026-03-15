@@ -73,7 +73,7 @@ def _fetch_page():
     """Fetch casino page HTML. Returns (html, status) or raises."""
     req = urllib.request.Request(CASINO_URL)
     with urllib.request.urlopen(req, context=SSL_CTX, timeout=30) as resp:
-        return resp.read().decode("utf-8"), resp.status
+        return resp.read().decode("utf-8", errors="replace"), resp.status
 
 def test_page_load():
     """Test casino page loads correctly."""
