@@ -4,7 +4,7 @@ Casino Tester — Autonomous testing of casino games and engagement.
 Tests game loading, API response, scoring system, and user experience.
 """
 
-import os, sys, json, time, random, ssl, urllib.request, urllib.error
+import os, sys, json, time, random, ssl, traceback, urllib.request, urllib.error
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -255,7 +255,7 @@ def daemon_loop(interval=300):
             err_file = ROOT / "logs" / "errors.jsonl"
             err_file.parent.mkdir(parents=True, exist_ok=True)
             with open(err_file, "a") as f:
-                f.write(json.dumps({"cycle": cycle, "error": str(e), "ts": datetime.now(timezone.utc).isoformat()}) + "\n")
+                f.write(json.dumps({"cycle": cycle, "error": str(e), "traceback": traceback.format_exc(), "ts": datetime.now(timezone.utc).isoformat()}) + "\n")
 
         print(f"  Sleeping {interval}s...")
         time.sleep(interval)
