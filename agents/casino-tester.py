@@ -230,9 +230,12 @@ def run_cycle(cycle_num):
         f.write(json.dumps(log_entry) + "\n")
 
     # Sync to mon-ipad
-    sync_dir = Path("/home/termius/mon-ipad/data/casino")
-    sync_dir.mkdir(parents=True, exist_ok=True)
-    (sync_dir / "latest-test.json").write_text(json.dumps(log_entry, indent=2))
+    try:
+        sync_dir = Path("/home/termius/mon-ipad/data/casino")
+        sync_dir.mkdir(parents=True, exist_ok=True)
+        (sync_dir / "latest-test.json").write_text(json.dumps(log_entry, indent=2))
+    except OSError as e:
+        print(f"  [WARN] Sync to mon-ipad failed: {e}")
 
     print(f"  Overall: {'PASS' if passed else 'FAIL'} ({avg_score:.0f}%)")
 
