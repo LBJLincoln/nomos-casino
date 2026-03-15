@@ -208,6 +208,9 @@ def run_cycle(cycle_num):
         print("  Skipping content tests (page not available)")
 
     # Overall score
+    if not results:
+        print("  No test results collected — skipping cycle summary")
+        return {"cycle": cycle_num, "timestamp": ts, "persona": persona["id"], "overall_score": 0, "passed": False, "results": []}
     avg_score = sum(r["score"] for r in results) / len(results)
     passed = all(r["passed"] for r in results)
 
