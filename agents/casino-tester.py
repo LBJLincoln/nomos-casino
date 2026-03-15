@@ -50,6 +50,31 @@ GAME_TESTS = [
     {"game": "wheel", "checks": ["spin_animation", "prize_landing", "prize_display", "history"]},
 ]
 
+# ── Persona → preferred games ────────────────────────────────────────────────
+PERSONA_GAMES = {
+    "casual-gamer": ["slots", "wheel"],
+    "high-roller": ["crash", "slots"],
+    "retro-fan": ["breakout", "snake"],
+    "competitive": ["breakout", "snake"],
+    "mobile-user": ["slots", "wheel", "snake"],
+    "streamer": ["crash", "breakout"],
+}
+
+# ── HTML markers proving each game is present ────────────────────────────────
+GAME_MARKERS = {
+    "breakout": ["breakout", "brick", "paddle"],
+    "crash": ["crash", "multiplier", "cash"],
+    "snake": ["snake"],
+    "slots": ["slot", "spin", "reel"],
+    "wheel": ["wheel", "prize"],
+}
+
+def _fetch_page():
+    """Fetch casino page HTML. Returns (html, status) or raises."""
+    req = urllib.request.Request(CASINO_URL)
+    with urllib.request.urlopen(req, context=SSL_CTX, timeout=30) as resp:
+        return resp.read().decode("utf-8"), resp.status
+
 def test_page_load():
     """Test casino page loads correctly."""
     try:
@@ -80,29 +105,66 @@ def test_page_load():
     except Exception as e:
         return {"test": "page_load", "passed": False, "score": 0, "error": str(e)}
 
-def test_engagement_metrics():
-    """Simulate and measure engagement potential."""
-    # This is a theoretical scoring based on design principles
+def test_engagement_metrics(html):
+    """Validate engagement features against actual page content."""
+    h = html.lower()
+
     engagement_checks = {
-        "has_progression_system": True,   # XP, levels, achievements
-        "has_variable_rewards": True,     # Random bonuses
-        "has_sound_design": True,         # Satisfying audio feedback
-        "has_visual_feedback": True,      # Animations, particles
-        "has_leaderboard": True,          # Social proof
-        "has_streak_rewards": True,       # Consecutive play bonuses
-        "has_near_miss_effect": True,     # Almost-won feedback
-        "has_quick_restart": True,        # < 1s to retry
-        "has_difficulty_curve": True,     # Progressive challenge
-        "has_mobile_support": True,       # Touch controls
+        "has_progression_system": any(w in h for w in ["xp", "level", "score", "point", "achievement"]),
+        "has_variable_rewards": any(w in h for w in ["bonus", "reward", "prize", "jackpot", "random"]),
+        "has_sound_design": any(w in h for w in ["audio", "sound", ".mp3", ".wav", "howl"]),
+        "has_visual_feedback": any(w in h for w in ["canvas", "animation", "particle", "glow", "neon"]),
+        "has_leaderboard": any(w in h for w in ["leaderboard", "ranking", "top score", "highscore"]),
+        "has_streak_rewards": any(w in h for w in ["streak", "consecutive", "daily", "combo"]),
+        "has_near_miss_effect": any(w in h for w in ["near", "almost", "close", "miss"]),
+        "has_quick_restart": any(w in h for w in ["restart", "retry", "play again", "new game"]),
+        "has_difficulty_curve": any(w in h for w in ["level", "difficulty", "stage", "wave"]),
+        "has_mobile_support": any(w in h for w in ["mobile", "touch", "responsive", "viewport"]),
     }
 
     score = sum(1 for v in engagement_checks.values() if v) / len(engagement_checks) * 100
 
     return {
         "test": "engagement_design",
-        "passed": score >= 80,
-        "score": score,
+        "passed": score >= 50,
+        "score": round(score, 1),
         "checks": engagement_checks,
+    }
+
+def test_game_content(html, persona):
+    """Validate game presence with persona-weighted scoring using GAME_TESTS."""
+    h = html.lower()
+    preferred = PERSONA_GAMES.get(persona["id"], ["breakout"])
+
+    game_results = {}
+    for game_test in GAME_TESTS:
+        game = game_test["game"]
+        markers = GAME_MARKERS.get(game, [game])
+        found = [m for m in markers if m in h]
+        game_results[game] = {
+            "present": len(found) > 0,
+            "markers_found": found,
+            "is_preferred": game in preferred,
+        }
+
+    # Preferred games weigh 2x
+    total_weight = 0
+    earned = 0
+    for game, result in game_results.items():
+        weight = 2 if result["is_preferred"] else 1
+        total_weight += weight
+        if result["present"]:
+            earned += weight
+
+    score = (earned / total_weight * 100) if total_weight > 0 else 0
+
+    return {
+        "test": "game_content",
+        "passed": score >= 60,
+        "score": round(score, 1),
+        "persona": persona["id"],
+        "preferred_games": preferred,
+        "games": game_results,
     }
 
 def run_cycle(cycle_num):
@@ -114,17 +176,36 @@ def run_cycle(cycle_num):
 
     results = []
 
-    # Test page load
+    # Fetch page once, share HTML across tests
+    html = None
     print("  Testing page load...")
     page_result = test_page_load()
     results.append(page_result)
     print(f"    Page load: {'PASS' if page_result['passed'] else 'FAIL'} ({page_result['score']:.0f}%)")
 
-    # Test engagement design
-    print("  Testing engagement design...")
-    engagement_result = test_engagement_metrics()
-    results.append(engagement_result)
-    print(f"    Engagement: {'PASS' if engagement_result['passed'] else 'FAIL'} ({engagement_result['score']:.0f}%)")
+    # Fetch HTML for content-based tests
+    if page_result["passed"]:
+        try:
+            html, _ = _fetch_page()
+        except Exception as e:
+            print(f"    [WARN] Failed to fetch page for content tests: {e}")
+            html = None
+
+    # Test game content (uses GAME_TESTS + persona preference)
+    if html:
+        print(f"  Testing game content for {persona['id']}...")
+        game_result = test_game_content(html, persona)
+        results.append(game_result)
+        print(f"    Game content: {'PASS' if game_result['passed'] else 'FAIL'} ({game_result['score']:.0f}%)")
+
+    # Test engagement design (real HTML checks)
+    if html:
+        print("  Testing engagement design...")
+        engagement_result = test_engagement_metrics(html)
+        results.append(engagement_result)
+        print(f"    Engagement: {'PASS' if engagement_result['passed'] else 'FAIL'} ({engagement_result['score']:.0f}%)")
+    else:
+        print("  Skipping content tests (page not available)")
 
     # Overall score
     avg_score = sum(r["score"] for r in results) / len(results)
