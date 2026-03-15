@@ -252,10 +252,13 @@ def daemon_loop(interval=300):
             run_cycle(cycle)
         except Exception as e:
             print(f"[ERROR] Cycle {cycle}: {e}")
-            err_file = ROOT / "logs" / "errors.jsonl"
-            err_file.parent.mkdir(parents=True, exist_ok=True)
-            with open(err_file, "a") as f:
-                f.write(json.dumps({"cycle": cycle, "error": str(e), "traceback": traceback.format_exc(), "ts": datetime.now(timezone.utc).isoformat()}) + "\n")
+            try:
+                err_file = ROOT / "logs" / "errors.jsonl"
+                err_file.parent.mkdir(parents=True, exist_ok=True)
+                with open(err_file, "a") as f:
+                    f.write(json.dumps({"cycle": cycle, "error": str(e), "traceback": traceback.format_exc(), "ts": datetime.now(timezone.utc).isoformat()}) + "\n")
+            except OSError as log_err:
+                print(f"  [WARN] Could not write error log: {log_err}")
 
         print(f"  Sleeping {interval}s...")
         time.sleep(interval)
