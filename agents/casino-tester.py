@@ -226,8 +226,11 @@ def run_cycle(cycle_num):
 
     metrics_file = ROOT / "logs" / "metrics.jsonl"
     metrics_file.parent.mkdir(parents=True, exist_ok=True)
-    with open(metrics_file, "a") as f:
-        f.write(json.dumps(log_entry) + "\n")
+    try:
+        with open(metrics_file, "a") as f:
+            f.write(json.dumps(log_entry) + "\n")
+    except OSError as e:
+        print(f"  [WARN] Could not write metrics log: {e}")
 
     # Sync to mon-ipad
     try:
